@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario Game</title>
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            height: 100%;
+            font-family: 'Press Start 2P', cursive;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            margin: 0 auto;
+            overflow: hidden;
+            background: #6b88ff;
+            border: 5px solid #333;
+            max-width: 1000px;
+        }
+        
+        #score-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 16px;
+            z-index: 100;
+            width: 100%;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: auto 100%;
+            background-repeat: repeat-x;
+            transition: transform 0.05s linear;
+        }
+        
+        #bg-clouds {
+            background-image: url('https://itc.yananas.com/git/mario/assets/mario_layer_4.gif');
+            z-index: 1;
+        }
+        
+        #bg-mountains {
+            background-image: url('https://itc.yananas.com/git/mario/assets/mario_layer_3.gif');
+            z-index: 2;
+        }
+        
+        #bg-plants {
+            background-image: url('https://itc.yananas.com/git/mario/assets/mario_layer_2.gif');
+            z-index: 3;
+        }
+        
+        #bg-ground {
+            background-image: url('https://itc.yananas.com/git/mario/assets/mario_layer_1.gif');
+            z-index: 4;
+        }
+        
+        #mario {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            bottom: 80px;
+            left: 100px;
+            background-image: url('https://raw.githubusercontent.com/LantareCode/random-this-and-thats/master/CSS/SuperMario-Animation/images/mario-sprite.png');
+            background-size: 500px;
+            background-position: 0 0;
+            z-index: 10;
+        }
+        
+        .mario-idle-right {
+            background-position: -210px 0 !important;
+        }
+        
+        .mario-idle-left {
+            background-position: -250px 0 !important;
+        }
+        
+        .mario-run-right {
+            animation: run-right 0.2s steps(3) infinite;
+        }
+        
+        .mario-run-left {
+            animation: run-left 0.2s steps(3) infinite;
+        }
+        
+        .mario-jump {
+            background-position: -290px 0 !important;
+        }
+        
+        @keyframes run-right {
+            from { background-position: -210px 0; }
+            to { background-position: -330px 0; }
+        }
+        
+        @keyframes run-left {
+            from { background-position: -250px 0; }
+            to { background-position: -370px 0; }
+        }
+        
+        @keyframes jump {
+            0%, 100% { bottom: 80px; }
+            50% { bottom: 180px; }
+        }
+        
+        .jumping {
+            animation: jump 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+        }
+        
+        .block {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-image: url('https://raw.githubusercontent.com/LantareCode/random-this-and-thats/master/CSS/SuperMario-Animation/images/question-block.png');
+            background-size: contain;
+            z-index: 5;
+        }
+        
+        .coin {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background-image: url('https://raw.githubusercontent.com/LantareCode/random-this-and-thats/master/CSS/SuperMario-Animation/images/Coin.gif');
+            background-size: contain;
+            z-index: 5;
+            display: none;
+        }
+        
+        .ground {
+            position: absolute;
+            height: 40px;
+            background-color: #5A3700;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        .enemy {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            bottom: 40px;
+            background-image: url('https://raw.githubusercontent.com/LantareCode/random-this-and-thats/master/CSS/SuperMario-Animation/images/goomba.gif');
+            background-size: contain;
+            z-index: 6;
+        }
+        
+        .dead-enemy {
+            background-image: url('https://raw.githubusercontent.com/LantareCode/random-this-and-thats/master/CSS/SuperMario-Animation/images/goomba-squished.png');
+            height: 20px;
+            bottom: 40px;
+        }
+        
+        .coin-animation {
+            animation: coin-bounce 0.5s ease-out;
+            display: block !important;
+        }
+        
+        @keyframes coin-bounce {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-150px); opacity: 0; }
+        }
+        
+        #game-over, #level-complete, #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        #level-complete, #game-over {
+            display: none;
+        }
+        
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', cursive;
+            cursor: pointer;
+            background-color: #E52521;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        
+        button:hover {
+            background-color: #FF3B36;
+        }
+        
+        .controls-info {
+            max-width: 800px;
+            margin: 20px auto;
+            border: 2px solid #333;
+            padding: 20px;
+            background-color: #f8f8f8;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .controls-info h2 {
+            margin-bottom: 10px;
+            color: #E52521;
+            text-align: center;
+        }
+        
+        .controls-info p {
+            margin-bottom: 10px;
+        }
+        
+        .controls-table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+        }
+        
+        .controls-table td {
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+        
+        .flag {
+            position: absolute;
+            width: 30px;
+            height: 150px;
+            background: linear-gradient(to bottom, transparent, transparent 20%, #E52521 20%, #E52521 100%);
+            bottom: 40px;
+            z-index: 5;
+        }
+        
+        .flag::before {
+            content: "";
+            position: absolute;
+            width: 60px;
+            height: 40px;
+            background-color: #E52521;
+            top: 20%;
+            right: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto my-4 px-4">
+        <h1 class="text-center text-3xl mb-4">SUPER MARIO PLAY</h1>
+        
+        <div id="game-container">
+            <div id="score-display">
+                <div>SCORE: <span id="score">0</span></div>
+                <div>COINS: <span id="coins">0</span></div>
+                <div>LIVES: <span id="lives">3</span></div>
+                <div>TIME: <span id="time">300</span></div>
+            </div>
+            
+            <div id="start-screen">
+                <h2>SUPER MARIO</h2>
+                <p>Press START to play</p>
+                <button id="start-button">START</button>
+            </div>
+            
+            <div id="game-over">
+                <h2>GAME OVER</h2>
+                <button id="restart-button">PLAY AGAIN</button>
+            </div>
+            
+            <div id="level-complete">
+                <h2>LEVEL COMPLETE!</h2>
+                <p>You won with <span id="final-score">0</span> points</p>
+                <button id="play-again-button">PLAY AGAIN</button>
+            </div>
+            
+            <div id="bg-clouds" class="layer"></div>
+            <div id="bg-mountains" class="layer"></div>
+            <div id="bg-plants" class="layer"></div>
+            <div id="bg-ground" class="layer"></div>
+            
+            <div id="mario" class="mario-idle-right"></div>
+            
+            <div class="ground"></div>
+        </div>
+        
+        <div class="controls-info mt-6">
+            <h2>How to Play</h2>
+            <p>Use arrow keys [↑→↓←] or W-A-S-D keys to move Mario, to jump higher hold the button.</p>
+            <p>Use Shift/CTRL to Fire/Sprint. Use P to pause and M to mute.</p>
+            
+            <h2 class="mt-4">Gameplay</h2>
+            <p>In this game you play as Mario. Navigate through the Mushroom Kingdom, avoiding enemies and collecting coins. Reach the flag pole at the end of the level to complete it!</p>
+            
+            <table class="controls-table">
+                <tr>
+                    <td><strong>Move Left</strong></td>
+                    <td>Left Arrow or A</td>
+                </tr>
+                <tr>
+                    <td><strong>Move Right</strong></td>
+                    <td>Right Arrow or D</td>
+                </tr>
+                <tr>
+                    <td><strong>Jump</strong></td>
+                    <td>Up Arrow, W, or Space</td>
+                </tr>
+                <tr>
+                    <td><strong>Sprint</strong></td>
+                    <td>Shift or Control</td>
+                </tr>
+                <tr>
+                    <td><strong>Pause</strong></td>
+                    <td>P</td>
+                </tr>
+                <tr>
+                    <td><strong>Mute</strong></td>
+                    <td>M</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Game variables
+        const mario = document.getElementById('mario');
+        const bgClouds = document.getElementById('bg-clouds');
+        const bgMountains = document.getElementById('bg-mountains');
+        const bgPlants = document.getElementById('bg-plants'); 
+        const bgGround = document.getElementById('bg-ground');
+        const scoreElement = document.getElementById('score');
+        const coinsElement = document.getElementById('coins');
+        const livesElement = document.getElementById('lives');
+        const timeElement = document.getElementById('time');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over');
+        const levelCompleteScreen = document.getElementById('level-complete');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const finalScoreElement = document.getElementById('final-score');
+        const gameContainer = document.getElementById('game-container');
+        
+        // Game state
+        let gameActive = false;
+        let score = 0;
+        let coins = 0;
+        let lives = 3;
+        let time = 300;
+        let position = 0;
+        let marioPosition = { x: 100, y: 80 };
+        let isJumping = false;
+        let isRunningRight = false;
+        let isRunningLeft = false;
+        let isSprinting = false;
+        let facingRight = true;
+        let enemies = [];
+        let blocks = [];
+        let gameTimer;
+        let countdownTimer;
+        let muted = false;
+        
+        // Sound effects
+        const jumpSound = new Audio('https://itc.yananas.com/git/mario/assets/jump.wav');
+        const coinSound = new Audio('https://itc.yananas.com/git/mario/assets/coin.mp3');
+        const dieSound = new Audio('https://itc.yananas.com/git/mario/assets/die.wav');
+        const levelCompleteSound = new Audio('https://itc.yananas.com/git/mario/assets/level-complete.wav');
+        
+        // Initialize game level
+        function initializeLevel() {
+            // Create blocks
+            createBlock(300, 240);
+            createBlock(350, 240);
+            createBlock(400, 240);
+            createBlock(600, 180);
+            
+            // Create enemies
+            createEnemy(500);
+            createEnemy(800);
+            createEnemy(1200);
+            
+            // Create flag (level end)
+            const flag = document.createElement('div');
+            flag.className = 'flag';
+            flag.style.left = '2000px';
+            gameContainer.appendChild(flag);
+        }
+        
+        // Create a block
+        function createBlock(x, y) {
+            const block = document.createElement('div');
+            block.className = 'block';
+            block.style.left = x + 'px';
+            block.style.bottom = y + 'px';
+            block.hasCoin = true;
+            gameContainer.appendChild(block);
+            blocks.push({ element: block, x, y, hasCoin });
+        }
+        
+        // Create an enemy
+        function createEnemy(x) {
+            const enemy = document.createElement('div');
+            enemy.className = 'enemy';
+            enemy.style.left = x + 'px';
+            enemy.dead = false;
+            gameContainer.appendChild(enemy);
+            enemies.push({ element: enemy, x, dead: false });
+        }
+        
+        // Handle collision with blocks
+        function handleBlockCollision(block) {
+            if (block.hasCoin) {
+                const coin = document.createElement('div');
+                coin.className = 'coin coin-animation';
+                coin.style.left = (parseInt(block.element.style.left) + 7) + 'px';
+                coin.style.bottom = (parseInt(block.element.style.bottom) + 40) + 'px';
+                gameContainer.appendChild(coin);
+                
+                if (!muted) coinSound.play();
+                updateScore(100);
+                coins++;
+                coinsElement.textContent = coins;
+                
+                setTimeout(() => {
+                    gameContainer.removeChild(coin);
+                }, 500);
+                
+                block.hasCoin = false;
+            }
+        }
+        
+        // Update score
+        function updateScore(points) {
+            score += points;
+            scoreElement.textContent = score;
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            // Move background layers (parallax effect)
+            if (isRunningRight) {
+                position -= isSprinting ? 5 : 3;
+                bgClouds.style.transform = `translateX(${position * 0.2}px)`;
+                bgMountains.style.transform = `translateX(${position * 0.4}px)`;
+                bgPlants.style.transform = `translateX(${position * 0.6}px)`;
+                bgGround.style.transform = `translateX(${position}px)`;
+                
+                // Move enemies and blocks relative to Mario
+                enemies.forEach(enemy => {
+                    enemy.x -= isSprinting ? 5 : 3;
+                    enemy.element.style.left = enemy.x + 'px';
+                });
+                
+                blocks.forEach(block => {
+                    block.x -= isSprinting ? 5 : 3;
+                    block.element.style.left = block.x + 'px';
+                });
+                
+                // Check for level complete (flag)
+                const flag = document.querySelector('.flag');
+                if (flag) {
+                    const flagX = parseInt(flag.style.left);
+                    flag.style.left = (flagX - (isSprinting ? 5 : 3)) + 'px';
+                    
+                    // Level complete when flag is reached
+                    if (flagX < 150) {
+                        completeLevel();
+                    }
+                }
+            }
+            
+            if (isRunningLeft && marioPosition.x > 50) {
+                marioPosition.x -= isSprinting ? 4 : 2;
+                mario.style.left = marioPosition.x + 'px';
+            }
+            
+            // Check block collisions
+            blocks.forEach(block => {
+                // Check if Mario hits block from below
+                const marioRight = marioPosition.x + 40;
+                const marioTop = 600 - marioPosition.y - 60;
+                
+                const blockLeft = block.x;
+                const blockRight = block.x + 40;
+                const blockBottom = 600 - block.y - 40;
+                
+                if (
+                    marioRight > blockLeft && 
+                    marioPosition.x < blockRight && 
+                    marioTop < blockBottom && 
+                    marioTop > blockBottom - 10 && 
+                    isJumping
+                ) {
+                    handleBlockCollision(block);
+                }
+            });
+            
+            // Check enemy collisions
+            enemies.forEach(enemy => {
+                if (enemy.dead) return;
+                
+                const marioRight = marioPosition.x + 40;
+                const marioBottom = marioPosition.y;
+                const marioTop = marioPosition.y + 60;
+                
+                const enemyLeft = enemy.x;
+                const enemyRight = enemy.x + 40;
+                const enemyTop = 40;
+                
+                // Collision with enemy
+                if (
+                    marioRight > enemyLeft &&
+                    marioPosition.x < enemyRight &&
+                    marioBottom < enemyTop + 40 &&
+                    marioTop > enemyTop
+                ) {
+                    // Jump on enemy (kill it)
+                    if (isJumping && marioBottom < enemyTop + 15) {
+                        enemy.dead = true;
+                        enemy.element.className = 'enemy dead-enemy';
+                        updateScore(200);
+                        
+                        // Jump boost after killing enemy
+                        mario.classList.add('jumping');
+                        setTimeout(() => {
+                            mario.classList.remove('jumping');
+                        }, 500);
+                    } else {
+                        // Hit by enemy (lose life)
+                        hurtMario();
+                    }
+                }
+            });
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Hurt Mario (lose a life)
+        function hurtMario() {
+            if (!muted) dieSound.play();
+            lives--;
+            livesElement.textContent = lives;
+            
+            // Flash Mario to show damage
+            mario.style.opacity = 0.5;
+            setTimeout(() => {
+                mario.style.opacity = 1;
+            }, 1500);
+            
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+        
+        // Game over
+        function gameOver() {
+            gameActive = false;
+            clearInterval(countdownTimer);
+            if (!muted) dieSound.play();
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        // Complete level
+        function completeLevel() {
+            gameActive = false;
+            clearInterval(countdownTimer);
+            if (!muted) levelCompleteSound.play();
+            finalScoreElement.textContent = score;
+            levelCompleteScreen.style.display = 'flex';
+        }
+        
+        // Start game
+        function startGame() {
+            // Reset game state
+            score = 0;
+            coins = 0;
+            lives = 3;
+            time = 300;
+            position = 0;
+            marioPosition = { x: 100, y: 80 };
+            isJumping = false;
+            isRunningRight = false;
+            isRunningLeft = false;
+            
+            // Reset UI
+            scoreElement.textContent = score;
+            coinsElement.textContent = coins;
+            livesElement.textContent = lives;
+            timeElement.textContent = time;
+            
+            // Reset backgrounds
+            bgClouds.style.transform = 'translateX(0)';
+            bgMountains.style.transform = 'translateX(0)';
+            bgPlants.style.transform = 'translateX(0)';
+            bgGround.style.transform = 'translateX(0)';
+            
+            // Reset Mario
+            mario.style.left = '100px';
+            mario.className = 'mario-idle-right';
+            
+            // Remove existing enemies and blocks
+            enemies.forEach(enemy => enemy.element.remove());
+            blocks.forEach(block => block.element.remove());
+            const existingFlag = document.querySelector('.flag');
+            if (existingFlag) existingFlag.remove();
+            
+            enemies = [];
+            blocks = [];
+            
+            // Initialize new level
+            initializeLevel();
+            
+            // Hide start screen
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            levelCompleteScreen.style.display = 'none';
+            
+            // Start game loop
+            gameActive = true;
+            gameLoop();
+            
+            // Start countdown timer
+            countdownTimer = setInterval(() => {
+                time--;
+                timeElement.textContent = time;
+                
+                if (time <= 0) {
+                    gameOver();
+                }
+            }, 1000);
+        }
+        
+        // Event listeners for controls
+        document.addEventListener('keydown', (event) => {
+            if (!gameActive) return;
+            
+            switch (event.key) {
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    isRunningRight = true;
+                    facingRight = true;
+                    if (!isJumping) {
+                        mario.className = 'mario-run-right';
+                    }
+                    break;
+                    
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    isRunningLeft = true;
+                    facingRight = false;
+                    if (!isJumping) {
+                        mario.className = 'mario-run-left';
+                    }
+                    break;
+                    
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                case ' ':
+                    if (!isJumping) {
+                        isJumping = true;
+                        if (!muted) jumpSound.play();
+                        mario.classList.add('jumping');
+                        mario.classList.add('mario-jump');
+                        
+                        setTimeout(() => {
+                            isJumping = false;
+                            mario.classList.remove('jumping');
+                            mario.classList.remove('mario-jump');
+                            
+                            if (isRunningRight) {
+                                mario.className = 'mario-run-right';
+                            } else if (isRunningLeft) {
+                                mario.className = 'mario-run-left';
+                            } else {
+                                mario.className = facingRight ? 'mario-idle-right' : 'mario-idle-left';
+                            }
+                        }, 500);
+                    }
+                    break;
+                    
+                case 'Shift':
+                case 'Control':
+                    isSprinting = true;
+                    break;
+                    
+                case 'p':
+                case 'P':
+                    gameActive = !gameActive;
+                    if (gameActive) gameLoop();
+                    break;
+                    
+                case 'm':
+                case 'M':
+                    muted = !muted;
+                    break;
+            }
+        });
+        
+        document.addEventListener('keyup', (event) => {
+            switch (event.key) {
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    isRunningRight = false;
+                    if (!isJumping) {
+                        mario.className = 'mario-idle-right';
+                    }
+                    break;
+                    
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    isRunningLeft = false;
+                    if (!isJumping) {
+                        mario.className = 'mario-idle-left';
+                    }
+                    break;
+                    
+                case 'Shift':
+                case 'Control':
+                    isSprinting = false;
+                    break;
+            }
+        });
+        
+        // Button event listeners
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+        playAgainButton.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
